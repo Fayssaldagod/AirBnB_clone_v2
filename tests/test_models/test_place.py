@@ -1,62 +1,67 @@
 #!/usr/bin/python3
-""" Test State Module """
-import unittest
+"""
+    test place
+"""
 from models.place import Place
-import datetime
+from models.city import City
+from models.user import User
+from models.base_model import BaseModel
+import unittest
 
 
-class TestPlace(unittest.TestCase):
-    """ Unit Tests for Place Class """
-    def setUp(self):
-        """ Setup instances of the Place Class """
-        self.a_inst = Place()
-        self.b_inst = Place()
-        self.b_inst.save()
+class test_Place(unittest.TestCase):
+    """
+        test for Place class
+    """
+    @classmethod
+    def setUpClass(cls):
+        """
+            setup
+        """
+        cls.dummy_city = Place()
+        cls.dummy_city.city_id = City().id
+        cls.dummy_city.user_id = User().id
+        cls.dummy_city.name = "test"
+        cls.dummy_city.description = "testing"
+        cls.dummy_city.number_rooms = 1
+        cls.dummy_city.number_bathrooms = 1
+        cls.dummy_city.max_guest = 1
+        cls.dummy_city.price_by_night = 1
+        cls.dummy_city.latitude = 1.0
+        cls.dummy_city.longitude = 1.0
+        cls.dummy_city.amenity_ids = []
 
-    def test_setup(self):
-        """ Tests for creating instances """
-        self.assertTrue(self.a_inst.id != self.b_inst.id)
-        self.assertTrue(hasattr(self.a_inst, "updated_at"))
-        self.assertTrue(hasattr(self.b_inst, "updated_at"))
-        self.assertTrue(hasattr(self.a_inst, "name"))
-        self.assertTrue(hasattr(self.b_inst, "name"))
-        self.assertTrue(hasattr(self.a_inst, "user_id"))
-        self.assertTrue(hasattr(self.b_inst, "user_id"))
-        self.assertTrue(hasattr(self.a_inst, "city_id"))
-        self.assertTrue(hasattr(self.b_inst, "city_id"))
-        self.assertTrue(hasattr(self.a_inst, "description"))
-        self.assertTrue(hasattr(self.b_inst, "description"))
-        self.assertTrue(hasattr(self.a_inst, "number_rooms"))
-        self.assertTrue(hasattr(self.b_inst, "number_rooms"))
-        self.assertTrue(hasattr(self.a_inst, "number_bathrooms"))
-        self.assertTrue(hasattr(self.b_inst, "number_bathrooms"))
-        self.assertTrue(hasattr(self.a_inst, "max_guest"))
-        self.assertTrue(hasattr(self.b_inst, "max_guest"))
-        self.assertTrue(hasattr(self.a_inst, "price_by_night"))
-        self.assertTrue(hasattr(self.b_inst, "price_by_night"))
-        self.assertTrue(hasattr(self.a_inst, "latitude"))
-        self.assertTrue(hasattr(self.b_inst, "longitude"))
-        self.assertFalse(hasattr(self.a_inst, "amenities"))
-        self.assertFalse(hasattr(self.b_inst, "amenities"))
-        self.assertTrue(self.a_inst.created_at != self.b_inst.created_at)
+    @classmethod
+    def tearDownClass(cls):
+        """
+            tear down
+        """
+        del cls.dummy_city
 
-    def test_types(self):
-        """ Testing for types """
-        self.assertTrue(type(self.a_inst.created_at) is datetime.datetime)
-        self.assertTrue(type(self.a_inst.name) is str)
-        self.assertTrue(type(self.a_inst.number_rooms) is int)
-        self.assertTrue(type(self.a_inst.number_bathrooms) is int)
-        self.assertTrue(type(self.a_inst.max_guest) is int)
-        self.assertTrue(type(self.a_inst.price_by_night) is int)
-        self.assertTrue(type(self.a_inst.latitude) is float)
-        self.assertTrue(type(self.a_inst.longitude) is float)
+    def test_inheritance(self):
+        """
+            test proper inheritance
+        """
+        self.assertIsInstance(self.dummy_city, BaseModel)
+        self.assertTrue(hasattr(self.dummy_city, "id"))
+        self.assertTrue(hasattr(self.dummy_city, "created_at"))
+        self.assertTrue(hasattr(self.dummy_city, "updated_at"))
 
-    def test_save(self):
-        """ Testing updating  """
-        b_date = self.b_inst.updated_at
-        self.b_inst.save()
-        b_date2 = self.b_inst.updated_at
-        self.assertTrue(b_date != b_date2)
+    def test_attrs(self):
+        """
+            test attributes
+        """
+        self.assertTrue(hasattr(self.dummy_city, "city_id"))
+        self.assertTrue(hasattr(self.dummy_city, "user_id"))
+        self.assertTrue(hasattr(self.dummy_city, "name"))
+        self.assertTrue(hasattr(self.dummy_city, "description"))
+        self.assertTrue(hasattr(self.dummy_city, "number_rooms"))
+        self.assertTrue(hasattr(self.dummy_city, "number_bathrooms"))
+        self.assertTrue(hasattr(self.dummy_city, "max_guest"))
+        self.assertTrue(hasattr(self.dummy_city, "price_by_night"))
+        self.assertTrue(hasattr(self.dummy_city, "latitude"))
+        self.assertTrue(hasattr(self.dummy_city, "longitude"))
+        self.assertTrue(hasattr(self.dummy_city, "amenity_ids"))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

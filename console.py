@@ -1,251 +1,211 @@
 #!/usr/bin/python3
-'''console file'''
+"""
+    Main Console program
+"""
 import cmd
-from models import storage
-from models.user import User
-from models.city import City
-from models.place import Place
-from models.state import State
-from models.review import Review
-from models.amenity import Amenity
-from models.base_model import BaseModel
+import models
+import re
 
 
 class HBNBCommand(cmd.Cmd):
-    '''Class HBNB Command'''
+    """Console"""
     prompt = "(hbnb) "
-    class_dic = [
-                    "BaseModel",
-                    "User",
-                    "Place",
-                    "State",
-                    "City",
-                    "Amenity",
-                    "Review"
-    ]
+
+    @classmethod
+    def fetch_command(cls, command):
+        commands = {"all": cls.do_all, "show": cls.do_show,
+                    "destroy": cls.do_destroy, "update": cls.do_update,
+                    "count": cls.do_count}
+        if command in commands:
+            return commands[command]
+        else:
+            return None
+
+    def do_EOF(self, arg):
+        """Quit the program"""
+        return True
+
+    def do_quit(self, arg):
+        """Quit the program"""
+        return True
 
     def emptyline(self):
-        '''emptyline'''
+        """Ignore empty inputs"""
         pass
 
-    def do_quit(self, line):
-        '''quit'''
-        return True
-
-    def do_EOF(self, line):
-        '''EOF'''
-        return True
-
-    def do_create(self, line):
-        '''create new instance'''
-        try:
-            if line:
-                ClassName = line.split(" ")[0]
-                new_dict = eval(ClassName+"()")
-                new_dict.save()
-                print(new_dict.id)
-            else:
-                raise SyntaxError
-        except SyntaxError:
-            print("** class name missing **")
-        except NameError:
-            print("** class doesn't exist **")
-
-    def do_show(self, line):
-        '''show instances'''
-        try:
-            if line:
-                arg_line = line.split(" ")
-                ClassName = arg_line[0]
-                if ClassName in self.class_dic:
-                    if len(arg_line) > 1:
-                        current_id = arg_line[1]
-                        all_objs = storage.all()
-                        full_id = "{}.{}".format(ClassName, current_id)
-                        if full_id in all_objs:
-                            print(all_objs[full_id])
-                        else:
-                            raise KeyError
-                    else:
-                        raise IndexError
-                else:
-                    raise NameError
-            else:
-                raise SyntaxError
-        except SyntaxError:
-            print("** class name missing **")
-        except NameError:
-            print("** class doesn't exist **")
-        except IndexError:
-            print("** instance id missing **")
-        except KeyError:
-            print("** no instance found **")
-
-    def do_destroy(self, line):
-        '''show instances'''
-        try:
-            if line:
-                arg_line = line.split(" ")
-                ClassName = arg_line[0]
-                if ClassName in self.class_dic:
-                    if len(arg_line) > 1:
-                        current_id = arg_line[1]
-                        all_objs = storage.all()
-                        full_id = "{}.{}".format(ClassName, current_id)
-                        if full_id in all_objs:
-                            del all_objs[full_id]
-                            storage.save()
-                        else:
-                            raise KeyError
-                    else:
-                        raise IndexError
-                else:
-                    raise NameError
-            else:
-                raise SyntaxError
-        except SyntaxError:
-            print("** class name missing **")
-        except NameError:
-            print("** class doesn't exist **")
-        except IndexError:
-            print("** instance id missing **")
-        except KeyError:
-            print("** no instance found **")
-
-    def do_all(self, line):
-        '''All'''
-        loader = storage.all()
-        global_list = []
-        if line:
+    def do_create(self, arg):
+        """Creates a new instance of a Model"""
+        if arg:
             try:
-                Model_name = line.split(" ")[0]
-                if Model_name in self.class_dic:
-                    for cont in loader:
-                        if cont.split(".")[0] == Model_name:
-                            global_list.append(str(loader[cont]))
-                    print(global_list)
+                args = arg.split()
+                template = models.dummy_classes[args[0]]
+                new_instance = template()
+                try:
+                    for pair in args[1:]:
+                        pair_split = pair.split("=")
+                        if (hasattr(new_instance, pair_split[0])):
+                            value = pair_split[1]
+                            flag = 0
+                            if (value.startswith('"')):
+                                value = value.strip('"')
+                                value = value.replace("\\", "")
+                                value = value.replace("_", " ")
+                            elif ("." in value):
+                                try:
+                                    value = float(value)
+                                except:
+                                    flag = 1
+                            else:
+                                try:
+                                    value = int(value)
+                                except:
+                                    flag = 1
+                            if (not flag):
+                                setattr(new_instance, pair_split[0], value)
+                        else:
+                            continue
+                    new_instance.save()
+                    print(new_instance.id)
+                except:
+                    new_instance.rollback()
+            except:
+                print("** class doesn't exist **")
+                models.storage.rollback()
+        else:
+            print("** class name missing **")
+
+    def do_show(self, arg):
+        """string representation of an instance"""
+        if arg:
+            arg = arg.split()
+            if arg[0] in models.dummy_classes:
+                if len(arg) > 1:
+                    key = "{}.{}".format(arg[0], arg[1])
+                    try:
+                        print(models.storage.all()[key])
+                    except:
+                        print("** no instance found **")
                 else:
-                    raise NameError
-            except NameError:
+                    print("** instance id missing **")
+            else:
                 print("** class doesn't exist **")
         else:
-            for cont in loader:
-                global_list.append(str(loader[cont]))
-            print(global_list)
-
-    def do_update(self, line):
-        '''update an instance'''
-        try:
-            if line:
-                arg_line = line.split(" ")
-                ClassName = arg_line[0]
-                if ClassName in self.class_dic:
-                    if len(arg_line) > 1:
-                        current_id = arg_line[1]
-                        full_id = "{}.{}".format(ClassName, current_id)
-                        all_objs = storage.all()
-                        if full_id in all_objs:
-                            if len(arg_line) > 2:
-                                if len(arg_line) > 3:
-                                    attribute_name = arg_line[2]
-                                    attribute_value = arg_line[3]
-                                    try:
-                                        all_objs[
-                                                    full_id
-                                        ].__dict__[
-                                                    attribute_name
-                                        ] = eval(attribute_value)
-                                    except Exception:
-                                        all_objs[
-                                                    full_id
-                                        ].__dict__[
-                                                    attribute_name
-                                        ] = attribute_value
-                                        all_objs[full_id].save()
-                                else:
-                                    raise ValueError
-                            else:
-                                raise AttributeError
-                        else:
-                            raise KeyError
-                    else:
-                        raise IndexError
-                else:
-                    raise NameError
-            else:
-                raise SyntaxError
-        except SyntaxError:
             print("** class name missing **")
-        except NameError:
-            print("** class doesn't exist **")
-        except IndexError:
-            print("** instance id missing **")
-        except KeyError:
-            print("** no instance found **")
-        except AttributeError:
-            print("** attribute name missing **")
-        except ValueError:
-            print("** value missing **")
 
-    def help_quit(self):
-        '''HELP_quit'''
-        print("Quit command to exit the program\n")
+    def do_destroy(self, arg):
+        """ Deletes an instance based on the class name and id"""
+        if arg:
+            arg = arg.split()
+            if arg[0] in models.dummy_classes:
+                if len(arg) > 1:
+                    key = "{}.{}".format(arg[0], arg[1])
+                    try:
+                        garbage = models.storage.all().pop(key)
+                        del(garbage)
+                        models.storage.save()
+                    except:
+                        print("** no instance found **")
+                else:
+                    print("** instance id missing **")
+            else:
+                print("** class doesn't exist **")
+        else:
+            print("** class name missing **")
 
-    def help_EOF(self):
-        '''HELP_EOF'''
-        print("Ctrl+D command to exit the program\n")
+    def do_all(self, arg):
+        """string representation of all instances"""
+        result = []
+        if arg:
+            arg = arg.split()
+            if arg[0] in models.dummy_classes:
+                current_inst = models.dummy_classes[arg[0]]
+                for i, o in models.storage.all(current_inst).items():
+                    if i.split('.')[0] == arg[0]:
+                        result.append(str(o))
+            else:
+                print("** class doesn't exist **")
+        else:
+            for instance, obj in models.storage.all().items():
+                result.append(str(obj))
+        if result:
+            print(result)
 
-    def help_create(self):
-        '''HELP_CREATE'''
-        print(
-                "Create Command to create a new instance of <Model_name>\
-                \nExample:\
-                \n> create <Model_name>\
-                \n"
-        )
+    def do_update(self, arg):
+        """Updates an instance adding or updating attribute"""
+        if arg:
+            arg = arg.split()
+            if arg[0] in models.dummy_classes:
+                if len(arg) > 1:
+                    key = "{}.{}".format(arg[0], arg[1])
+                    try:
+                        instance = models.storage.all()[key]
+                        if len(arg) > 2:
+                            if len(arg) > 3:
+                                setattr(instance, arg[2], arg[3].strip('"'))
+                                instance.save()
+                            else:
+                                print("** value missing **")
+                        else:
+                            print("** attribute name missing **")
+                    except:
+                        print("** no instance found **")
+                else:
+                    print("** instance id missing **")
+            else:
+                print("** class doesn't exist **")
+        else:
+            print("** class name missing **")
 
-    def help_show(self):
-        '''HELP_SHOW'''
-        print(
-                "Show Command to prints the string representation of an\
-                \ninstance based on the <Model_name> and <id>\
-                \nExample:\
-                \n> show <Model_name> <id>\
-                \n"
-        )
+    def do_count(self, arg):
+        """
+        count number of instances
+        """
+        count = 0
+        if arg:
+            arg = arg.split()
+            if arg[0] in models.dummy_classes:
+                for instance, obj in models.storage.all().items():
+                    if instance.split('.')[0] == arg[0]:
+                        count += 1
+            else:
+                print("** class doesn't exist **")
+        else:
+            for instance, obj in models.storage.all().items():
+                count += 1
+        print(count)
 
-    def help_destroy(self):
-        '''HELP_DESTROY'''
-        print(
-                "Destroy Command to deletes an instance and save changes\
-                \nbased on the <Model_name> and <id>\
-                \nExample:\
-                \n> destroy <Model_name> <id>\
-                \n"
-        )
+    def default(self, line):
+        """
+        handle invalid commands and
+        special commands like <class name>.<command>()
+        """
+        match = re.fullmatch(r"[A-Za-z]+\.[A-Za-z]+\(.*?\)", line)
+        if match:
+            splited = line.split('.')
+            if splited[0] in models.dummy_classes:
+                parsed = splited[1].split("(")
+                parsed[1] = parsed[1].strip(")")
+                args = parsed[1].split(",")
+                args = [arg.strip() for arg in args]
+                if len(args) >= 3:
+                    temp = args[2]
+                    args = [arg.strip('"') for arg in args[:2]]
+                    args.append(temp)
+                else:
+                    args = [arg.strip('"') for arg in args]
+                command = self.fetch_command(parsed[0])
+                if command:
+                    reconstructed_args = [arg for arg in args]
+                    reconstructed_args.insert(0, splited[0])
+                    reconstructed_command = " ".join(reconstructed_args)
+                    command(self, reconstructed_command)
+                else:
+                    print("*** Unknown syntax: {}".format(line))
+            else:
+                print("** class doesn't exist **")
+        else:
+            print("*** Unknown syntax: {}".format(line))
 
-    def help_all(self):
-        '''HELP_ALL'''
-        print(
-                "All Command to Prints all string representation of all\
-                \ninstances based or not on the <Model_name>.\
-                \nExample:\
-                \n> all\
-                \n\tto print all models\
-                \n> all <Model_name>\
-                \n\tto print all <Model_name>\
-                \n"
-        )
 
-    def help_update(self):
-        '''HELP_UPDATE'''
-        print(
-                "Update Command t Updates an instance based on the <Model_name>\
-                \nand <id> by adding or updating attribute.\
-                \nExample:\
-                \n> update <Model_name> <id> <attribute name> <value>\
-                \n"
-        )
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     HBNBCommand().cmdloop()

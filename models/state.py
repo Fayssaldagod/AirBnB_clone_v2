@@ -1,37 +1,32 @@
 #!/usr/bin/python3
-"""This is the state class"""
+"""
+    contains state class to represent a state
+"""
+
 from models.base_model import BaseModel, Base
 import models
-from models.city import City
-from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
-from os import getenv
+from os import environ
+
+storage_engine = environ.get("HBNB_TYPE_STORAGE")
 
 
 class State(BaseModel, Base):
-    """This is the class for State
-    Attributes:
-        name: input name
-    """
-    __tablename__ = "states"
-    name = Column(String(128), nullable=False)
-    if getenv("HBNB_TYPE_STORAGE") == "db":
-        cities = relationship(City, backref="state",
-                              cascade="all, delete-orphan")
-
+    """ State class: class to represent states of cities"""
+    if (storage_engine == 'db'):
+        __tablename__ = "states"
+        name = Column(String(128), nullable=False)
+        cities = relationship("City", backref="state")
     else:
+        name = ""
+
         @property
         def cities(self):
+            """cities list
             """
-            getter of city list
-            """
-            city_list = []
-            all_cities = models.storage.all(City)
-            for city in all_cities.values():
-                if city.state_id == self.id:
-                    city_list.append(city)
-            return city_list
-
-    def __init__(self, *args, **kwargs):
-        """initializes state"""
-        super().__init__(*args, **kwargs)
+            result = []
+            for j, i in models.storage.all(models.city.City).items():
+                if (i.state_id == self.id):
+                    result.append(i)
+            return result

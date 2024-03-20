@@ -1,51 +1,105 @@
 #!/usr/bin/python3
-'''test'''
+"""
+    tests for BaseModel
+"""
 import unittest
+from datetime import datetime
+import time
+import re
 import os
-from models import *
-import pep8
-import datetime
+from models.base_model import BaseModel
 
 
-class TestBaseModel(unittest.TestCase):
-    '''Test for BaseModel class '''
-    def setUp(self):
-        '''sets up objects for testing'''
-        self.model1 = BaseModel()
-        self.model2 = BaseModel()
-        self.model2.save()
+class Test_BaseModel(unittest.TestCase):
+    """
+        Base test class
+    """
+    @classmethod
+    def setUpClass(cls):
+        """setup class"""
+        cls.dummy = BaseModel()
 
-    def test_basic_setup(self):
-        '''test for to_json method of BaseModel class '''
-        self.assertTrue(hasattr(self.model1, 'id'))
-        self.assertTrue(hasattr(self.model1, '__class__'))
-        self.assertTrue(hasattr(self.model1, 'created_at'))
-        self.assertTrue(hasattr(self.model1, 'updated_at'))
-        self.assertTrue(hasattr(self.model2, 'updated_at'))
-        self.assertTrue(self.model1.id != self.model2.id)
-        m1c = self.model1.created_at
-        m2c = self.model2.created_at
-        self.assertTrue(m1c != m2c)
+    @classmethod
+    def tearDownClass(cls):
+        """tear down"""
+        del cls.dummy
+        try:
+            os.remove("file.json")
+        except:
+            pass
 
-    def test_types(self):
-        '''testing attributes to ensure proper typing'''
-        self.assertIsInstance(self.model1.id, str)
-        self.assertIsInstance(self.model1.__class__, type)
-        self.assertIsInstance(self.model1.created_at, datetime.datetime)
-        self.model2.save()
-        self.assertIsInstance(self.model2.updated_at, datetime.datetime)
+    def test_id(self):
+        """
+            test id is a valid UUID
+        """
+        dummy = self.dummy
+        self.assertIsInstance(dummy, BaseModel)
+        self.assertIsInstance(dummy.id, str)
+        is_match = re.fullmatch(r"\w{8}-\w{4}-\w{4}-\w{4}-\w{12}", dummy.id)
+        self.assertTrue(is_match)
 
-    def test_save(self):
-        '''testing whether save updates the updated_at attribute'''
-        self.model2.save()
-        m1u = self.model2.updated_at
-        self.model2.save()
-        m1u_saved = self.model2.updated_at
-        self.assertFalse(m1u == m1u_saved)
+    def test_unique_id(self):
+        """
+            test unique ID's
+        """
+        dummy_1 = BaseModel()
+        dummy_2 = BaseModel()
+        self.assertNotEqual(dummy_1.id, dummy_2.id)
+        del dummy_1
+        del dummy_2
 
-    def test_to_json(self):
-        '''tests to_json method with diffs in output & in-memory objects'''
+    def test_creation_time(self):
+        """
+            test initial creation time and updation time
+        """
+        dummy = self.dummy
+        self.assertIsInstance(dummy.created_at, datetime)
+        self.assertIsInstance(dummy.updated_at, datetime)
+        self.assertEqual(dummy.updated_at, dummy.created_at)
 
-if __name__ == '__main__':
-    '''__name__'''
-    unittest.main()
+    def test_str(self):
+        """
+            test string representation of an object
+        """
+        dummy = self.dummy
+        correct = "[{}] ({}) {}".format("BaseModel", dummy.id, dummy.__dict__)
+        self.assertEqual(str(dummy), correct)
+
+    def test_dict(self):
+        """
+            test dictionary representation of a model
+        """
+        dummy = self.dummy
+        test_dict = dummy.to_dict()
+        self.assertTrue("__class__" in test_dict)
+        self.assertIsInstance(test_dict["__class__"], str)
+        self.assertTrue("id" in test_dict)
+        self.assertIsInstance(test_dict["id"], str)
+        self.assertTrue("created_at" in test_dict)
+        self.assertIsInstance(test_dict["created_at"], str)
+        self.assertTrue("updated_at" in test_dict)
+        self.assertIsInstance(test_dict["updated_at"], str)
+        dummy.test = 10
+        test_dict = dummy.to_dict()
+        self.assertTrue("test" in test_dict)
+
+    def test_fromdict(self):
+        """
+            test instance retrival from a dictionary
+        """
+        dummy = self.dummy
+        dummy.test = 10
+        test_instance = BaseModel(**dummy.to_dict())
+        self.assertTrue("__class__" not in test_instance.__dict__)
+        self.assertTrue(hasattr(test_instance, "id"))
+        self.assertTrue(hasattr(test_instance, "created_at"))
+        self.assertTrue(hasattr(test_instance, "updated_at"))
+        self.assertTrue(hasattr(test_instance, "test"))
+        self.assertIsInstance(test_instance.created_at, datetime)
+        self.assertIsInstance(test_instance.updated_at, datetime)
+        self.assertEqual(test_instance.created_at, dummy.created_at)
+        self.assertEqual(test_instance.updated_at, dummy.updated_at)
+
+
+if __name__ == "__main__":
+        unittest.main()
