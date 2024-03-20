@@ -1,51 +1,43 @@
 #!/usr/bin/python3
-"""
-    test reviews
-"""
-from models.base_model import BaseModel
-from models.review import Review
-from models.place import Place
-from models.user import User
+""" Test State Module """
 import unittest
+from models.review import Review
+import datetime
 
 
-class test_Review(unittest.TestCase):
-    """
-        test for Review class
-    """
-    @classmethod
-    def setUpClass(cls):
-        """
-            setup
-        """
-        cls.dummy_review = Review()
-        cls.dummy_review.text = "test"
-        cls.dummy_review.user_id = User().id
-        cls.dummy_review.place_id = Place().id
+class TestReview(unittest.TestCase):
+    """ Unit Tests for Review Class """
+    def setUp(self):
+        """ Setup instances of the Review Class """
+        self.a_inst = Review()
+        self.b_inst = Review()
+        self.b_inst.save()
 
-    @classmethod
-    def tearDownClass(cls):
-        """
-            tear down
-        """
-        del cls.dummy_review
+    def test_setup(self):
+        """ Tests for creating instances """
+        self.assertTrue(self.a_inst.id != self.b_inst.id)
+        self.assertTrue(hasattr(self.a_inst, "updated_at"))
+        self.assertTrue(hasattr(self.a_inst, "place_id"))
+        self.assertTrue(hasattr(self.b_inst, "place_id"))
+        self.assertTrue(hasattr(self.a_inst, "user_id"))
+        self.assertTrue(hasattr(self.b_inst, "user_id"))
+        self.assertTrue(hasattr(self.a_inst, "text"))
+        self.assertTrue(hasattr(self.b_inst, "text"))
+        self.assertTrue(self.a_inst.created_at != self.b_inst.created_at)
 
-    def test_inheritance(self):
-        """
-            test proper inheritance
-        """
-        self.assertIsInstance(self.dummy_review, BaseModel)
-        self.assertTrue(hasattr(self.dummy_review, "id"))
-        self.assertTrue(hasattr(self.dummy_review, "created_at"))
-        self.assertTrue(hasattr(self.dummy_review, "updated_at"))
+    def test_types(self):
+        """ Testing for types """
+        self.assertTrue(type(self.a_inst.created_at) is datetime.datetime)
+        self.assertTrue(type(self.a_inst.place_id) is str)
+        self.assertTrue(type(self.a_inst.user_id) is str)
+        self.assertTrue(type(self.a_inst.text) is str)
 
-    def test_attrs(self):
-        """
-            test attributes
-        """
-        self.assertTrue(hasattr(self.dummy_review, "text"))
-        self.assertTrue(hasattr(self.dummy_review, "user_id"))
-        self.assertTrue(hasattr(self.dummy_review, "place_id"))
+    def test_save(self):
+        """ Testing updating  """
+        b_date = self.b_inst.updated_at
+        self.b_inst.save()
+        b_date2 = self.b_inst.updated_at
+        self.assertTrue(b_date != b_date2)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
